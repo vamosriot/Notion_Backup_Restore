@@ -1,0 +1,550 @@
+{
+  "version": "1.0",
+  "created_at": "2023-12-15T14:30:22.123456Z",
+  "config": {
+    "include_blocks": false,
+    "validate_integrity": true
+  },
+  "databases": {
+    "Tasks": {
+      "id": "task-db-12345678-1234-1234-1234-123456789012",
+      "name": "Tasks",
+      "url": "https://www.notion.so/task-db-12345678123412341234123456789012",
+      "schema_file": "tasks_schema.json",
+      "data_file": "tasks_data.json",
+      "properties_count": 12,
+      "pages_count": 150,
+      "created_time": "2023-01-15T10:00:00.000Z",
+      "last_edited_time": "2023-12-15T14:00:00.000Z"
+    },
+    "Notes": {
+      "id": "note-db-12345678-1234-1234-1234-123456789012",
+      "name": "Notes",
+      "url": "https://www.notion.so/note-db-12345678123412341234123456789012",
+      "schema_file": "notes_schema.json",
+      "data_file": "notes_data.json",
+      "properties_count": 7,
+      "pages_count": 75,
+      "created_time": "2023-01-15T10:00:00.000Z",
+      "last_edited_time": "2023-12-15T14:00:00.000Z"
+    },
+    "Sprints": {
+      "id": "sprint-db-12345678-1234-1234-1234-123456789012",
+      "name": "Sprints",
+      "url": "https://www.notion.so/sprint-db-12345678123412341234123456789012",
+      "schema_file": "sprints_schema.json",
+      "data_file": "sprints_data.json",
+      "properties_count": 7,
+      "pages_count": 12,
+      "created_time": "2023-01-15T10:00:00.000Z",
+      "last_edited_time": "2023-12-15T14:00:00.000Z"
+    }
+  },
+  "statistics": {
+    "total_databases": 3,
+    "total_pages": 237,
+    "api_stats": {
+      "total_requests": 45,
+      "total_errors": 0,
+      "error_rate": 0.0,
+      "circuit_breaker_state": "closed",
+      "circuit_breaker_failures": 0,
+      "rate_limiter": {
+        "current_rate": 2.1,
+        "requests_in_window": 8,
+        "configured_rate": 2.5,
+        "burst_size": 5,
+        "window_size": 10,
+        "last_request_time": 1702650622.123456
+      }
+    }
+  },
+  "sample_schemas": {
+    "Documentation": {
+      "id": "doc-db-12345678-1234-1234-1234-123456789012",
+      "name": "Documentation",
+      "title": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Documentation"
+          }
+        }
+      ],
+      "description": [],
+      "properties": {
+        "Title": {
+          "name": "Title",
+          "type": "title",
+          "config": {
+            "type": "title",
+            "id": "title"
+          },
+          "id": "title"
+        },
+        "Category": {
+          "name": "Category",
+          "type": "select",
+          "config": {
+            "type": "select",
+            "options": [
+              {
+                "id": "cat1",
+                "name": "API",
+                "color": "blue"
+              },
+              {
+                "id": "cat2", 
+                "name": "User Guide",
+                "color": "green"
+              },
+              {
+                "id": "cat3",
+                "name": "Technical",
+                "color": "red"
+              }
+            ]
+          },
+          "id": "cat-prop"
+        },
+        "Status": {
+          "name": "Status",
+          "type": "select",
+          "config": {
+            "type": "select",
+            "options": [
+              {
+                "id": "stat1",
+                "name": "Draft",
+                "color": "gray"
+              },
+              {
+                "id": "stat2",
+                "name": "In Review",
+                "color": "yellow"
+              },
+              {
+                "id": "stat3",
+                "name": "Published",
+                "color": "green"
+              }
+            ]
+          },
+          "id": "status-prop"
+        },
+        "Priority": {
+          "name": "Priority",
+          "type": "select",
+          "config": {
+            "type": "select",
+            "options": [
+              {
+                "id": "pri1",
+                "name": "Low",
+                "color": "gray"
+              },
+              {
+                "id": "pri2",
+                "name": "Medium",
+                "color": "yellow"
+              },
+              {
+                "id": "pri3",
+                "name": "High",
+                "color": "red"
+              }
+            ]
+          },
+          "id": "priority-prop"
+        },
+        "Tags": {
+          "name": "Tags",
+          "type": "multi_select",
+          "config": {
+            "type": "multi_select",
+            "options": [
+              {
+                "id": "tag1",
+                "name": "Frontend",
+                "color": "blue"
+              },
+              {
+                "id": "tag2",
+                "name": "Backend",
+                "color": "green"
+              },
+              {
+                "id": "tag3",
+                "name": "Database",
+                "color": "purple"
+              }
+            ]
+          },
+          "id": "tags-prop"
+        },
+        "Related Tasks": {
+          "name": "Related Tasks",
+          "type": "relation",
+          "config": {
+            "type": "relation",
+            "database_id": "task-db-12345678-1234-1234-1234-123456789012"
+          },
+          "id": "rel-tasks-prop"
+        },
+        "Created": {
+          "name": "Created",
+          "type": "created_time",
+          "config": {
+            "type": "created_time"
+          },
+          "id": "created-prop"
+        },
+        "Last Edited": {
+          "name": "Last Edited",
+          "type": "last_edited_time",
+          "config": {
+            "type": "last_edited_time"
+          },
+          "id": "edited-prop"
+        },
+        "Assignee": {
+          "name": "Assignee",
+          "type": "people",
+          "config": {
+            "type": "people"
+          },
+          "id": "assignee-prop"
+        }
+      }
+    },
+    "Tasks": {
+      "id": "task-db-12345678-1234-1234-1234-123456789012",
+      "name": "Tasks",
+      "title": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Tasks"
+          }
+        }
+      ],
+      "description": [],
+      "properties": {
+        "Task Name": {
+          "name": "Task Name",
+          "type": "title",
+          "config": {
+            "type": "title",
+            "id": "title"
+          },
+          "id": "title"
+        },
+        "Status": {
+          "name": "Status",
+          "type": "select",
+          "config": {
+            "type": "select",
+            "options": [
+              {
+                "id": "todo",
+                "name": "To Do",
+                "color": "gray"
+              },
+              {
+                "id": "progress",
+                "name": "In Progress",
+                "color": "yellow"
+              },
+              {
+                "id": "done",
+                "name": "Done",
+                "color": "green"
+              }
+            ]
+          },
+          "id": "status-prop"
+        },
+        "Priority": {
+          "name": "Priority",
+          "type": "select",
+          "config": {
+            "type": "select",
+            "options": [
+              {
+                "id": "low",
+                "name": "Low",
+                "color": "gray"
+              },
+              {
+                "id": "med",
+                "name": "Medium", 
+                "color": "yellow"
+              },
+              {
+                "id": "high",
+                "name": "High",
+                "color": "red"
+              }
+            ]
+          },
+          "id": "priority-prop"
+        },
+        "Assignee": {
+          "name": "Assignee",
+          "type": "people",
+          "config": {
+            "type": "people"
+          },
+          "id": "assignee-prop"
+        },
+        "Due Date": {
+          "name": "Due Date",
+          "type": "date",
+          "config": {
+            "type": "date"
+          },
+          "id": "due-prop"
+        },
+        "Effort": {
+          "name": "Effort",
+          "type": "number",
+          "config": {
+            "type": "number",
+            "format": "number"
+          },
+          "id": "effort-prop"
+        },
+        "Value": {
+          "name": "Value",
+          "type": "number",
+          "config": {
+            "type": "number",
+            "format": "number"
+          },
+          "id": "value-prop"
+        },
+        "ROI": {
+          "name": "ROI",
+          "type": "formula",
+          "config": {
+            "type": "formula",
+            "expression": "round(Value/(Effort*400)*10)/10"
+          },
+          "id": "roi-prop"
+        },
+        "Documentation": {
+          "name": "Documentation",
+          "type": "relation",
+          "config": {
+            "type": "relation",
+            "database_id": "doc-db-12345678-1234-1234-1234-123456789012"
+          },
+          "id": "doc-rel-prop"
+        },
+        "Notes": {
+          "name": "Notes",
+          "type": "relation",
+          "config": {
+            "type": "relation",
+            "database_id": "note-db-12345678-1234-1234-1234-123456789012"
+          },
+          "id": "notes-rel-prop"
+        },
+        "Sprint": {
+          "name": "Sprint",
+          "type": "relation",
+          "config": {
+            "type": "relation",
+            "database_id": "sprint-db-12345678-1234-1234-1234-123456789012"
+          },
+          "id": "sprint-rel-prop"
+        },
+        "Created": {
+          "name": "Created",
+          "type": "created_time",
+          "config": {
+            "type": "created_time"
+          },
+          "id": "created-prop"
+        },
+        "Last Edited": {
+          "name": "Last Edited",
+          "type": "last_edited_time",
+          "config": {
+            "type": "last_edited_time"
+          },
+          "id": "edited-prop"
+        }
+      }
+    }
+  },
+  "sample_pages": {
+    "Documentation": [
+      {
+        "id": "doc-page-1",
+        "url": "https://www.notion.so/doc-page-1",
+        "properties": {
+          "Title": {
+            "type": "title",
+            "title": [
+              {
+                "type": "text",
+                "text": {
+                  "content": "API Authentication Guide"
+                }
+              }
+            ]
+          },
+          "Category": {
+            "type": "select",
+            "select": {
+              "id": "cat1",
+              "name": "API",
+              "color": "blue"
+            }
+          },
+          "Status": {
+            "type": "select",
+            "select": {
+              "id": "stat3",
+              "name": "Published",
+              "color": "green"
+            }
+          },
+          "Priority": {
+            "type": "select",
+            "select": {
+              "id": "pri3",
+              "name": "High",
+              "color": "red"
+            }
+          },
+          "Tags": {
+            "type": "multi_select",
+            "multi_select": [
+              {
+                "id": "tag2",
+                "name": "Backend",
+                "color": "green"
+              }
+            ]
+          },
+          "Related Tasks": {
+            "type": "relation",
+            "relation": [
+              {
+                "id": "task-page-1"
+              },
+              {
+                "id": "task-page-2"
+              }
+            ]
+          }
+        },
+        "parent": {
+          "type": "database_id",
+          "database_id": "doc-db-12345678-1234-1234-1234-123456789012"
+        },
+        "archived": false,
+        "created_time": "2023-01-15T10:00:00.000Z",
+        "last_edited_time": "2023-12-15T14:00:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "user-1"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "user-1"
+        }
+      }
+    ],
+    "Tasks": [
+      {
+        "id": "task-page-1",
+        "url": "https://www.notion.so/task-page-1",
+        "properties": {
+          "Task Name": {
+            "type": "title",
+            "title": [
+              {
+                "type": "text",
+                "text": {
+                  "content": "Implement OAuth 2.0 authentication"
+                }
+              }
+            ]
+          },
+          "Status": {
+            "type": "select",
+            "select": {
+              "id": "done",
+              "name": "Done",
+              "color": "green"
+            }
+          },
+          "Priority": {
+            "type": "select",
+            "select": {
+              "id": "high",
+              "name": "High",
+              "color": "red"
+            }
+          },
+          "Due Date": {
+            "type": "date",
+            "date": {
+              "start": "2023-02-15"
+            }
+          },
+          "Effort": {
+            "type": "number",
+            "number": 8
+          },
+          "Value": {
+            "type": "number",
+            "number": 1000
+          },
+          "Documentation": {
+            "type": "relation",
+            "relation": [
+              {
+                "id": "doc-page-1"
+              }
+            ]
+          },
+          "Notes": {
+            "type": "relation",
+            "relation": [
+              {
+                "id": "note-page-1"
+              }
+            ]
+          },
+          "Sprint": {
+            "type": "relation",
+            "relation": [
+              {
+                "id": "sprint-page-1"
+              }
+            ]
+          }
+        },
+        "parent": {
+          "type": "database_id",
+          "database_id": "task-db-12345678-1234-1234-1234-123456789012"
+        },
+        "archived": false,
+        "created_time": "2023-01-15T10:00:00.000Z",
+        "last_edited_time": "2023-12-15T14:00:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "user-1"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "user-1"
+        }
+      }
+    ]
+  }
+}
