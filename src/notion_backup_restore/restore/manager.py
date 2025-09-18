@@ -419,7 +419,7 @@ class NotionRestoreManager:
             
             # Log validation summary
             total_errors = sum(
-                len(result.get("errors", [])) 
+                result.total_errors
                 for result in validation_results.values()
             )
             

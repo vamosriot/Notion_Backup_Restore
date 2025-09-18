@@ -319,7 +319,7 @@ class NotionBackupManager:
                 json.dump(validation_results, f, indent=2, ensure_ascii=False, default=str)
             
             # Log validation summary
-            total_errors = sum(len(result.get("errors", [])) for result in validation_results.values())
+            total_errors = sum(result.total_errors for result in validation_results.values())
             if total_errors > 0:
                 self.logger.warning(f"Validation found {total_errors} issues")
             else:

@@ -199,6 +199,9 @@ class DataRestorer:
                 if prop_type == "relation":
                     # Update relation references
                     updated_properties[prop_name] = self._update_relation_property(prop_value)
+                elif prop_type in ["select", "multi_select"]:
+                    # Update select option references - remove invalid options
+                    updated_properties[prop_name] = self._update_select_property(prop_value)
                 elif prop_type in ["formula", "rollup", "created_time", "created_by", 
                                  "last_edited_time", "last_edited_by"]:
                     # Skip computed properties - they will be calculated automatically
@@ -246,6 +249,48 @@ class DataRestorer:
         updated_property["relation"] = updated_relations
         return updated_property
     
+    def _update_select_property(self, select_property: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Update select/multi-select property by removing invalid option references.
+        
+        Args:
+            select_property: Original select property
+            
+        Returns:
+            Updated select property with valid options only
+        """
+        updated_property = select_property.copy()
+        prop_type = select_property.get("type")
+        
+        if prop_type == "select":
+            # For select properties, if the option is invalid, set to None
+            select_value = select_property.get("select")
+            if select_value and isinstance(select_value, dict) and "id" in select_value:
+                # Remove the select value if it has an ID (which might be invalid)
+                # Let the new database handle the option by name if possible
+                if "name" in select_value:
+                    updated_property["select"] = {"name": select_value["name"]}
+                else:
+                    updated_property["select"] = None
+            
+        elif prop_type == "multi_select":
+            # For multi-select properties, filter out invalid options
+            multi_select_values = select_property.get("multi_select", [])
+            valid_options = []
+            
+            for option in multi_select_values:
+                if isinstance(option, dict):
+                    if "name" in option:
+                        # Keep option by name only, remove ID
+                        valid_options.append({"name": option["name"]})
+                    # Skip options without names or with only IDs
+                else:
+                    valid_options.append(option)
+            
+            updated_property["multi_select"] = valid_options
+        
+        return updated_property
+    
     def _create_page_blocks(self, page_id: str, blocks: List[Dict[str, Any]]) -> None:
         """
         Create blocks for a page.
@@ -258,41 +303,66 @@ class DataRestorer:
             return
         
         try:
-            # Prepare blocks for creation
-            prepared_blocks = self._prepare_blocks(blocks)
-            
-            if prepared_blocks:
-                self.api_client.append_block_children(
-                    block_id=page_id,
-                    children=prepared_blocks
-                )
+            # Create blocks hierarchically
+            self._create_blocks_hierarchically(page_id, blocks)
                 
         except Exception as e:
             self.logger.warning(f"Failed to create blocks for page {page_id}: {e}")
     
-    def _prepare_blocks(self, blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _create_blocks_hierarchically(self, parent_id: str, blocks: List[Dict[str, Any]]) -> None:
         """
-        Prepare blocks for creation, removing read-only properties.
+        Create blocks hierarchically, handling nested children properly.
+        
+        Args:
+            parent_id: ID of the parent block or page
+            blocks: List of block data to create
+        """
+        if not blocks:
+            return
+        
+        # Prepare blocks for creation (without children)
+        prepared_blocks = self._prepare_blocks_for_creation(blocks)
+        
+        if not prepared_blocks:
+            return
+        
+        # Create the blocks
+        response = self.api_client.append_block_children(
+            block_id=parent_id,
+            children=prepared_blocks
+        )
+        
+        # Get the created block IDs from the response
+        created_blocks = response.get('results', [])
+        
+        # Create child blocks for each block that has children
+        for i, original_block in enumerate(blocks):
+            if "children" in original_block and original_block["children"]:
+                if i < len(created_blocks):
+                    new_block_id = created_blocks[i].get('id')
+                    if new_block_id:
+                        # Recursively create child blocks
+                        self._create_blocks_hierarchically(new_block_id, original_block["children"])
+    
+    def _prepare_blocks_for_creation(self, blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Prepare blocks for creation, removing read-only properties and children.
         
         Args:
             blocks: Original block data
             
         Returns:
-            Prepared blocks for creation
+            Prepared blocks for creation (without children)
         """
         prepared_blocks = []
         
         for block in blocks:
-            # Remove read-only properties
+            # Remove read-only properties and children
             prepared_block = {
                 key: value for key, value in block.items()
                 if key not in ["id", "created_time", "created_by", "last_edited_time", 
-                             "last_edited_by", "archived", "has_children"]
+                             "last_edited_by", "archived", "has_children", "children"]
             }
-            
-            # Handle child blocks recursively
-            if "children" in block and block["children"]:
-                prepared_block["children"] = self._prepare_blocks(block["children"])
             
             prepared_blocks.append(prepared_block)
         

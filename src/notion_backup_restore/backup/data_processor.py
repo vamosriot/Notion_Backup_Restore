@@ -155,7 +155,7 @@ class DataProcessor:
         processed_config = config.copy()
         
         # Check if this is a cross-database relation that should be removed in limited backups
-        if hasattr(self, 'available_databases') and 'config' in processed_config:
+        if hasattr(self, 'available_databases') and self.available_databases is not None and 'config' in processed_config:
             relation_config = processed_config['config']
             target_db_id = relation_config.get('database_id')
             
