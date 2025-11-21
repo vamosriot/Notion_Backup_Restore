@@ -127,8 +127,23 @@ class DatabaseFinder:
                 if obj_type == "page":
                     # Check if this page is actually a database
                     props = result.get("properties", {})
-                    title = result.get("properties", {}).get("title", {})
-                    self.logger.info(f"    Page '{result_id}': {len(props)} properties")
+                    
+                    # Get the page title
+                    page_title = "UNKNOWN"
+                    # Try to get title from properties
+                    title_prop = props.get("title", {})
+                    if title_prop:
+                        title_array = title_prop.get("title", [])
+                        if title_array:
+                            page_title = "".join([t.get("plain_text", "") for t in title_array])
+                    
+                    # If no title in properties, try the top-level title field (for wikis/databases)
+                    if page_title == "UNKNOWN":
+                        title_array = result.get("title", [])
+                        if title_array:
+                            page_title = "".join([t.get("plain_text", "") for t in title_array])
+                    
+                    self.logger.info(f"    Page '{result_id}': '{page_title}' ({len(props)} properties)")
                 
                 self.logger.debug(f"  Result details: {obj_type}, id={result_id}")
                 

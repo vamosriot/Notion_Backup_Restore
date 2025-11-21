@@ -1,0 +1,8 @@
+#!/home/yonny/Notion_Backup_Restore/bin/python3
+# -*- coding: utf-8 -*-
+import re
+import sys
+from src.notion_backup_restore.cli.backup_cli import main
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(main())
