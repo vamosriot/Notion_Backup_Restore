@@ -13,6 +13,9 @@ A production-ready Notion backup and restore system specifically designed for co
 - **Validation**: Comprehensive integrity checking for both backup and restore operations
 - **Progress Tracking**: Real-time progress updates and detailed operation reports
 - **API Version Compatibility**: Handles API changes automatically to prevent restoration failures
+- **☁️ S3 Cloud Backup**: Automatic compression and upload to AWS S3 with OIDC/IRSA support
+- **🔄 Cloud Restore**: Download and restore backups directly from S3
+- **📦 Automatic Compression**: ZIP compression reduces storage costs by ~70%
 
 ## Installation
 
@@ -135,12 +138,14 @@ Set `BACKUP_PROCESS_FOR_COMPATIBILITY=true` in your `.env` file (default: enable
 
 ## Usage
 
-### Backup
+### Local Backup & Restore
+
+#### Backup
 
 Create a complete backup of your workspace:
 
 ```bash
-python backup.py
+python backup.py main
 ```
 
 Options:
@@ -151,19 +156,18 @@ Options:
 
 Example:
 ```bash
-python backup.py --output-dir ./my-backups --include-blocks --verbose
+python backup.py main --output-dir ./my-backups --include-blocks --verbose
 ```
 
-### Restore
+#### Restore
 
 Restore from a backup:
 
 ```bash
-python restore.py --backup-dir ./backups/backup_20231215_143022
+python restore.py main ./backups/backup_20231215_143022
 ```
 
 Options:
-- `--backup-dir`: Path to backup directory (required)
 - `--parent-id`: Parent page ID for restored databases
 - `--dry-run`: Preview changes without executing (default: false)
 - `--validate`: Run integrity validation after restore (default: true)
@@ -171,8 +175,51 @@ Options:
 
 Example:
 ```bash
-python restore.py --backup-dir ./backups/backup_20231215_143022 --parent-id abc123 --dry-run
+python restore.py main ./backups/backup_20231215_143022 --parent-id abc123 --dry-run
 ```
+
+### ☁️ S3 Cloud Backup & Restore
+
+#### Backup to S3
+
+```bash
+# Basic backup to S3 (with compression)
+python backup_to_s3.py
+
+# Keep local copy after upload
+python backup_to_s3.py --keep-local --verbose
+
+# List backups in S3
+python backup_to_s3.py list
+```
+
+#### Restore from S3
+
+```bash
+# Interactive restore (shows menu)
+python restore_from_s3.py
+
+# Restore specific backup
+python restore_from_s3.py backup_20231215_143022
+
+# List available backups
+python restore_from_s3.py list
+
+# Get backup details
+python restore_from_s3.py info backup_20231215_143022
+```
+
+**Quick Setup:**
+1. Add to `.env`:
+   ```bash
+   S3_BUCKET_NAME=your-bucket
+   AWS_REGION=us-east-1
+   AWS_USE_IAM_ROLE=true  # For OIDC/IRSA
+   ```
+2. Run: `python backup_to_s3.py`
+
+See [S3_QUICKSTART.md](S3_QUICKSTART.md) for 5-minute setup guide.
+See [S3_BACKUP_GUIDE.md](S3_BACKUP_GUIDE.md) for complete documentation.
 
 ### Validation
 
