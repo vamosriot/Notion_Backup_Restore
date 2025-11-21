@@ -109,8 +109,15 @@ class DatabaseFinder:
             )
             
             # Look for exact name matches in databases
+            self.logger.debug(f"Search returned {len(search_results.get('results', []))} results for '{database_name}'")
+            
             for result in search_results.get("results", []):
-                if result.get("object") == "database":
+                obj_type = result.get("object")
+                result_id = result.get("id", "N/A")
+                
+                self.logger.debug(f"  Result: type={obj_type}, id={result_id}")
+                
+                if obj_type == "database":
                     title_property = result.get("title", [])
                     if title_property:
                         title = "".join([
@@ -118,8 +125,11 @@ class DatabaseFinder:
                             for text in title_property
                         ])
                         
+                        self.logger.debug(f"    Database title: '{title}'")
+                        
                         # Check for exact match (case-insensitive)
                         if title.strip().lower() == database_name.lower():
+                            self.logger.info(f"Found exact match for '{database_name}': {result_id}")
                             return self._create_database_info(result)
             
             # If not found as database, search for pages (wikis appear as pages)
