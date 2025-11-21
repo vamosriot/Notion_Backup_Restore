@@ -101,7 +101,9 @@ class DatabaseFinder:
         """
         try:
             # Search without filter - Notion API changed and filter "database" no longer works
-            # Databases are now included in general search results
+            # According to Notion API docs, databases are now called "Data Sources"
+            # Filter values are now "page" or "data_source" instead of "database"
+            # We search without filter and let databases appear in general results
             search_results = self.api_client.search(
                 query=database_name
             )
