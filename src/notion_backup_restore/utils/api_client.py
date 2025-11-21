@@ -280,10 +280,18 @@ class NotionAPIClient:
     
     def query_database(self, database_id: str, **kwargs) -> Dict[str, Any]:
         """Query database pages."""
-        return self.safe_api_call(
-            lambda: self.client.databases.query(database_id, **kwargs),
-            f"query_database({database_id})"
-        )
+        # Notion API renamed databases.query() to data_sources.query()
+        try:
+            return self.safe_api_call(
+                lambda: self.client.data_sources.query(database_id, **kwargs),
+                f"query_database({database_id})"
+            )
+        except AttributeError:
+            # Fallback for older notion-client versions
+            return self.safe_api_call(
+                lambda: self.client.databases.query(database_id, **kwargs),
+                f"query_database({database_id})"
+            )
     
     def create_database(self, **kwargs) -> Dict[str, Any]:
         """Create a new database."""
