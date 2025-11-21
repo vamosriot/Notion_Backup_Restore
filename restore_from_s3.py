@@ -214,10 +214,11 @@ def extract_backup(zip_file: Path, extract_dir: Path) -> Path:
     
     return backup_dirs[0]
 
-app = typer.Typer()
+app = typer.Typer(add_completion=False)
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     backup_name: Optional[str] = typer.Argument(
         None,
         help="Specific backup name to restore (if not provided, will show selection menu)"
@@ -268,6 +269,9 @@ def main(
     4. Restores to Notion
     5. Optionally cleans up downloaded files
     """
+    # If a subcommand is invoked (like 'list' or 'info'), don't run the default restore
+    if ctx.invoked_subcommand is not None:
+        return
     
     console.print(Panel.fit(
         "[bold blue]Notion Restore from S3[/bold blue]\n"

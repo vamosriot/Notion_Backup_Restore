@@ -208,10 +208,11 @@ def save_backup_index(s3_client, bucket_name: str, s3_prefix: str, metadata: dic
     except Exception as e:
         console.print(f"[yellow]Warning: Could not update backup index:[/yellow] {e}")
 
-app = typer.Typer()
+app = typer.Typer(add_completion=False)
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     include_blocks: bool = typer.Option(
         True,
         "--include-blocks/--no-include-blocks",
@@ -247,6 +248,9 @@ def main(
     3. Uploads to S3
     4. Optionally cleans up local files
     """
+    # If a subcommand is invoked (like 'list'), don't run the default backup
+    if ctx.invoked_subcommand is not None:
+        return
     
     console.print(Panel.fit(
         "[bold blue]Notion Backup to S3[/bold blue]\n"
