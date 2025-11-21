@@ -121,6 +121,9 @@ class DatabaseFinder:
                 obj_types[obj_type] = obj_types.get(obj_type, 0) + 1
             self.logger.info(f"  Object types in results: {obj_types}")
             
+            # Collect all matching databases
+            matching_databases = []
+            
             for result in search_results.get("results", []):
                 obj_type = result.get("object")
                 result_id = result.get("id", "N/A")
@@ -158,8 +161,8 @@ class DatabaseFinder:
                         
                         # Check for exact match (case-insensitive)
                         if title.strip().lower() == database_name.lower():
-                            self.logger.info(f"Found exact match for '{database_name}': {result_id}")
-                            return self._create_database_info(result)
+                            self.logger.info(f"Found potential match for '{database_name}': {result_id}")
+                            matching_databases.append(result)
                 
                 elif obj_type == "page":
                     # With data_source filter, we shouldn't get many pages, but handle them anyway
@@ -182,6 +185,23 @@ class DatabaseFinder:
                                 return self._create_database_info(result)
                             else:
                                 self.logger.debug(f"    Page '{title}' matched name but has no properties, skipping")
+            
+            # Try to verify access to each matching database
+            # Some databases might be in search results but not accessible (404 on retrieve)
+            for db_candidate in matching_databases:
+                db_id = db_candidate.get("id")
+                try:
+                    # Try to retrieve the database to verify we have access
+                    db_info = self.api_client.get_database(db_id)
+                    self.logger.info(f"Successfully verified access to database '{database_name}': {db_id}")
+                    return self._create_database_info(db_info)
+                except Exception as e:
+                    self.logger.warning(f"Cannot access database {db_id}: {e}")
+                    continue
+            
+            # If no accessible database found in data_source results, try searching pages (for wikis)
+            if matching_databases:
+                self.logger.warning(f"Found {len(matching_databases)} databases named '{database_name}' but none are accessible")
             
             # If not found as database, search for pages (wikis appear as pages)
             search_results = self.api_client.search(
