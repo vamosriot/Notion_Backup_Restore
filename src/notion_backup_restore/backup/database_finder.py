@@ -100,13 +100,10 @@ class DatabaseFinder:
             DatabaseInfo if found, None otherwise
         """
         try:
-            # First search for databases
+            # Search without filter - Notion API changed and filter "database" no longer works
+            # Databases are now included in general search results
             search_results = self.api_client.search(
-                query=database_name,
-                filter={
-                    "value": "database",
-                    "property": "object"
-                }
+                query=database_name
             )
             
             # Look for exact name matches in databases
@@ -166,12 +163,9 @@ class DatabaseFinder:
                                     return wiki_as_db
             
             # If no exact match found, try partial matches in databases
+            # Search again without filter for partial matches
             search_results = self.api_client.search(
-                query=database_name,
-                filter={
-                    "value": "database",
-                    "property": "object"
-                }
+                query=database_name
             )
             
             for result in search_results.get("results", []):
