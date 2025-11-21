@@ -214,10 +214,7 @@ def extract_backup(zip_file: Path, extract_dir: Path) -> Path:
     
     return backup_dirs[0]
 
-@typer.Typer()
-def app():
-    """Restore Notion workspace from S3 backup."""
-    pass
+app = typer.Typer()
 
 @app.command()
 def main(

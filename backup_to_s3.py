@@ -208,10 +208,7 @@ def save_backup_index(s3_client, bucket_name: str, s3_prefix: str, metadata: dic
     except Exception as e:
         console.print(f"[yellow]Warning: Could not update backup index:[/yellow] {e}")
 
-@typer.Typer()
-def app():
-    """Backup Notion workspace to S3 with compression."""
-    pass
+app = typer.Typer()
 
 @app.command()
 def main(
