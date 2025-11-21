@@ -127,26 +127,20 @@ class DatabaseFinder:
                 
                 # More detailed logging to see what we're getting
                 self.logger.debug(f"  Result: type={obj_type}, id={result_id}")
+                
+                # Get title for logging (works for all object types)
+                title_for_log = "UNKNOWN"
+                title_array = result.get("title", [])
+                if title_array:
+                    title_for_log = "".join([t.get("plain_text", "") for t in title_array])
+                
+                # Log all results with their titles
+                self.logger.info(f"    {obj_type} '{result_id}': '{title_for_log}'")
+                
                 if obj_type == "page":
                     # Check if this page is actually a database
                     props = result.get("properties", {})
-                    
-                    # Get the page title
-                    page_title = "UNKNOWN"
-                    # Try to get title from properties
-                    title_prop = props.get("title", {})
-                    if title_prop:
-                        title_array = title_prop.get("title", [])
-                        if title_array:
-                            page_title = "".join([t.get("plain_text", "") for t in title_array])
-                    
-                    # If no title in properties, try the top-level title field (for wikis/databases)
-                    if page_title == "UNKNOWN":
-                        title_array = result.get("title", [])
-                        if title_array:
-                            page_title = "".join([t.get("plain_text", "") for t in title_array])
-                    
-                    self.logger.info(f"    Page '{result_id}': '{page_title}' ({len(props)} properties)")
+                    self.logger.debug(f"    Page has {len(props)} properties")
                 
                 self.logger.debug(f"  Result details: {obj_type}, id={result_id}")
                 
