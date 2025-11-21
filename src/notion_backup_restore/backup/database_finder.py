@@ -109,13 +109,28 @@ class DatabaseFinder:
             )
             
             # Look for exact name matches in databases
-            self.logger.debug(f"Search returned {len(search_results.get('results', []))} results for '{database_name}'")
+            self.logger.info(f"Search returned {len(search_results.get('results', []))} results for '{database_name}'")
+            
+            # Debug: show what types of objects we're getting
+            obj_types = {}
+            for result in search_results.get("results", []):
+                obj_type = result.get("object")
+                obj_types[obj_type] = obj_types.get(obj_type, 0) + 1
+            self.logger.info(f"  Object types in results: {obj_types}")
             
             for result in search_results.get("results", []):
                 obj_type = result.get("object")
                 result_id = result.get("id", "N/A")
                 
+                # More detailed logging to see what we're getting
                 self.logger.debug(f"  Result: type={obj_type}, id={result_id}")
+                if obj_type == "page":
+                    # Check if this page is actually a database
+                    props = result.get("properties", {})
+                    title = result.get("properties", {}).get("title", {})
+                    self.logger.info(f"    Page '{result_id}': {len(props)} properties")
+                
+                self.logger.debug(f"  Result details: {obj_type}, id={result_id}")
                 
                 if obj_type == "database":
                     title_property = result.get("title", [])
