@@ -100,12 +100,15 @@ class DatabaseFinder:
             DatabaseInfo if found, None otherwise
         """
         try:
-            # Search without filter - Notion API changed and filter "database" no longer works
+            # Search with "data_source" filter - Notion API changed from "database" to "data_source"
             # According to Notion API docs, databases are now called "Data Sources"
             # Filter values are now "page" or "data_source" instead of "database"
-            # We search without filter and let databases appear in general results
             search_results = self.api_client.search(
-                query=database_name
+                query=database_name,
+                filter={
+                    "value": "data_source",
+                    "property": "object"
+                }
             )
             
             # Look for exact name matches in databases
@@ -165,31 +168,8 @@ class DatabaseFinder:
                             return self._create_database_info(result)
                 
                 elif obj_type == "page":
-                    # Databases can also appear as pages in search results
-                    # For pages with many properties (likely databases), we need to fetch full info
-                    props = result.get("properties", {})
-                    
-                    # If page has many properties, it's likely a database - fetch its full details
-                    if len(props) > 5:
-                        try:
-                            # Try to retrieve as database first
-                            self.logger.debug(f"    Page {result_id} has {len(props)} properties, checking if it's a database...")
-                            db_info = self.api_client.get_database(result_id)
-                            
-                            # Get database title
-                            db_title_array = db_info.get("title", [])
-                            if db_title_array:
-                                db_title = "".join([t.get("plain_text", "") for t in db_title_array])
-                                self.logger.info(f"    Retrieved database '{db_title}' (ID: {result_id})")
-                                
-                                # Check for exact match
-                                if db_title.strip().lower() == database_name.lower():
-                                    self.logger.info(f"Found database match for '{database_name}': {result_id}")
-                                    return self._create_database_info(db_info)
-                        except Exception as e:
-                            self.logger.debug(f"    Could not retrieve as database: {e}")
-                    
-                    # Also try regular page title matching
+                    # With data_source filter, we shouldn't get many pages, but handle them anyway
+                    # Try regular page title matching for wikis
                     title_property = result.get("title", [])
                     if title_property:
                         title = "".join([
@@ -197,14 +177,14 @@ class DatabaseFinder:
                             for text in title_property
                         ])
                         
-                        self.logger.debug(f"    Page/Database title: '{title}'")
+                        self.logger.debug(f"    Page title: '{title}'")
                         
                         # Check for exact match (case-insensitive)
                         if title.strip().lower() == database_name.lower():
-                            # This might be a database appearing as a page
-                            # Verify it has properties (databases have schema properties)
+                            # This might be a wiki appearing as a page
+                            # Verify it has properties
                             if result.get("properties"):
-                                self.logger.info(f"Found database as page for '{database_name}': {result_id}")
+                                self.logger.info(f"Found wiki/database as page for '{database_name}': {result_id}")
                                 return self._create_database_info(result)
                             else:
                                 self.logger.debug(f"    Page '{title}' matched name but has no properties, skipping")
