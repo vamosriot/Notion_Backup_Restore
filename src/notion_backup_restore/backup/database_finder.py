@@ -147,6 +147,8 @@ class DatabaseFinder:
                 
                 self.logger.debug(f"  Result details: {obj_type}, id={result_id}")
                 
+                # Notion API changed - databases now come as "database" objects OR as "page" objects
+                # We need to check both
                 if obj_type == "database":
                     title_property = result.get("title", [])
                     if title_property:
@@ -161,6 +163,28 @@ class DatabaseFinder:
                         if title.strip().lower() == database_name.lower():
                             self.logger.info(f"Found exact match for '{database_name}': {result_id}")
                             return self._create_database_info(result)
+                
+                elif obj_type == "page":
+                    # Databases can also appear as pages in search results
+                    # Try to get title from top-level title field (databases have this)
+                    title_property = result.get("title", [])
+                    if title_property:
+                        title = "".join([
+                            text.get("plain_text", "") 
+                            for text in title_property
+                        ])
+                        
+                        self.logger.debug(f"    Page/Database title: '{title}'")
+                        
+                        # Check for exact match (case-insensitive)
+                        if title.strip().lower() == database_name.lower():
+                            # This might be a database appearing as a page
+                            # Verify it has properties (databases have schema properties)
+                            if result.get("properties"):
+                                self.logger.info(f"Found database as page for '{database_name}': {result_id}")
+                                return self._create_database_info(result)
+                            else:
+                                self.logger.debug(f"    Page '{title}' matched name but has no properties, skipping")
             
             # If not found as database, search for pages (wikis appear as pages)
             search_results = self.api_client.search(
