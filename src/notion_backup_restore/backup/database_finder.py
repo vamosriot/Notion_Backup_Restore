@@ -186,22 +186,14 @@ class DatabaseFinder:
                             else:
                                 self.logger.debug(f"    Page '{title}' matched name but has no properties, skipping")
             
-            # Try to verify access to each matching database
-            # Some databases might be in search results but not accessible (404 on retrieve)
-            for db_candidate in matching_databases:
-                db_id = db_candidate.get("id")
-                try:
-                    # Try to retrieve the database to verify we have access
-                    db_info = self.api_client.get_database(db_id)
-                    self.logger.info(f"Successfully verified access to database '{database_name}': {db_id}")
-                    return self._create_database_info(db_info)
-                except Exception as e:
-                    self.logger.warning(f"Cannot access database {db_id}: {e}")
-                    continue
-            
-            # If no accessible database found in data_source results, try searching pages (for wikis)
+            # Return first matching database from search results
+            # Note: data_source objects from search contain all needed info (id, title, properties)
+            # We don't need to call databases.retrieve() as it may fail even for accessible databases
             if matching_databases:
-                self.logger.warning(f"Found {len(matching_databases)} databases named '{database_name}' but none are accessible")
+                db_result = matching_databases[0]
+                db_id = db_result.get("id")
+                self.logger.info(f"Using database '{database_name}': {db_id} (from search results)")
+                return self._create_database_info(db_result)
             
             # If not found as database, search for pages (wikis appear as pages)
             search_results = self.api_client.search(
