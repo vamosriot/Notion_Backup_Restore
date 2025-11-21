@@ -166,7 +166,30 @@ class DatabaseFinder:
                 
                 elif obj_type == "page":
                     # Databases can also appear as pages in search results
-                    # Try to get title from top-level title field (databases have this)
+                    # For pages with many properties (likely databases), we need to fetch full info
+                    props = result.get("properties", {})
+                    
+                    # If page has many properties, it's likely a database - fetch its full details
+                    if len(props) > 5:
+                        try:
+                            # Try to retrieve as database first
+                            self.logger.debug(f"    Page {result_id} has {len(props)} properties, checking if it's a database...")
+                            db_info = self.api_client.get_database(result_id)
+                            
+                            # Get database title
+                            db_title_array = db_info.get("title", [])
+                            if db_title_array:
+                                db_title = "".join([t.get("plain_text", "") for t in db_title_array])
+                                self.logger.info(f"    Retrieved database '{db_title}' (ID: {result_id})")
+                                
+                                # Check for exact match
+                                if db_title.strip().lower() == database_name.lower():
+                                    self.logger.info(f"Found database match for '{database_name}': {result_id}")
+                                    return self._create_database_info(db_info)
+                        except Exception as e:
+                            self.logger.debug(f"    Could not retrieve as database: {e}")
+                    
+                    # Also try regular page title matching
                     title_property = result.get("title", [])
                     if title_property:
                         title = "".join([
