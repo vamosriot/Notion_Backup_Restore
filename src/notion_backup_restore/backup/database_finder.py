@@ -144,9 +144,9 @@ class DatabaseFinder:
                 
                 self.logger.debug(f"  Result details: {obj_type}, id={result_id}")
                 
-                # Notion API changed - databases now come as "database" objects OR as "page" objects
-                # We need to check both
-                if obj_type == "database":
+                # Notion API changed - databases now come as "data_source" objects
+                # (Previously they were "database" objects)
+                if obj_type in ["database", "data_source"]:
                     title_property = result.get("title", [])
                     if title_property:
                         title = "".join([
@@ -154,7 +154,7 @@ class DatabaseFinder:
                             for text in title_property
                         ])
                         
-                        self.logger.debug(f"    Database title: '{title}'")
+                        self.logger.debug(f"    Database/data_source title: '{title}'")
                         
                         # Check for exact match (case-insensitive)
                         if title.strip().lower() == database_name.lower():
@@ -232,7 +232,7 @@ class DatabaseFinder:
             )
             
             for result in search_results.get("results", []):
-                if result.get("object") == "database":
+                if result.get("object") in ["database", "data_source"]:
                     title_property = result.get("title", [])
                     if title_property:
                         title = "".join([
