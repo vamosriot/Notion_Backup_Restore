@@ -62,12 +62,13 @@ class SchemaExtractor:
         self.api_client = api_client
         self.logger = logger or logging.getLogger(__name__)
     
-    def extract_schema(self, database_id: str) -> DatabaseSchema:
+    def extract_schema(self, database_id: str, database_data: Optional[Dict[str, Any]] = None) -> DatabaseSchema:
         """
         Extract complete schema for a database.
         
         Args:
             database_id: ID of the database
+            database_data: Optional pre-fetched database data (from search results)
             
         Returns:
             DatabaseSchema object with complete schema information
@@ -75,8 +76,12 @@ class SchemaExtractor:
         self.logger.info(f"Extracting schema for database: {database_id}")
         
         try:
-            # Get database information
-            database_data = self.api_client.get_database(database_id)
+            # Get database information (use provided data or fetch from API)
+            if database_data is None:
+                database_data = self.api_client.get_database(database_id)
+                self.logger.debug(f"Fetched database data from API for {database_id}")
+            else:
+                self.logger.debug(f"Using provided database data for {database_id}")
             
             # Extract properties
             properties = {}

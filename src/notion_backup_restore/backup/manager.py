@@ -197,7 +197,8 @@ class NotionBackupManager:
             try:
                 self.logger.info(f"Extracting schema {i}/{total_databases}: {db_name}")
                 
-                schema = self.schema_extractor.extract_schema(db_info.id)
+                # Use raw_data from discovery if available (avoids API call that may fail)
+                schema = self.schema_extractor.extract_schema(db_info.id, db_info.raw_data)
                 self.extracted_schemas[db_name] = schema
                 
                 # Save schema to file

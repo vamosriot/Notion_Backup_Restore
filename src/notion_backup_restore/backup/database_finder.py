@@ -24,6 +24,7 @@ class DatabaseInfo:
     created_time: str
     last_edited_time: str
     parent: Dict[str, Any]
+    raw_data: Optional[Dict[str, Any]] = None  # Raw API response for schema extraction
 
 
 class DatabaseFinder:
@@ -291,7 +292,8 @@ class DatabaseFinder:
             properties=database_data.get("properties", {}),
             created_time=database_data.get("created_time", ""),
             last_edited_time=database_data.get("last_edited_time", ""),
-            parent=database_data.get("parent", {})
+            parent=database_data.get("parent", {}),
+            raw_data=database_data  # Store raw data for schema extraction
         )
     
     def _convert_wiki_to_database_info(self, page_data: Dict[str, Any], expected_name: str) -> Optional[DatabaseInfo]:
