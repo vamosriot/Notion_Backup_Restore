@@ -451,6 +451,8 @@ class NotionBackupManager:
     
     def _save_content_to_file(self, content: DatabaseContent, file_path: Path) -> None:
         """Save database content to JSON file."""
+        import sys
+        
         content_data = {
             "database_id": content.database_id,
             "database_name": content.database_name,
@@ -475,8 +477,20 @@ class NotionBackupManager:
             ]
         }
         
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(content_data, f, indent=2, ensure_ascii=False, default=str)
+        # For large databases (>5000 pages), increase recursion limit and save without indent
+        # to avoid "maximum recursion depth exceeded" errors
+        original_limit = sys.getrecursionlimit()
+        try:
+            if content.total_pages > 5000:
+                sys.setrecursionlimit(50000)
+                self.logger.info(f"Large database ({content.total_pages} pages), saving without indentation")
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(content_data, f, ensure_ascii=False, default=str)
+            else:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(content_data, f, indent=2, ensure_ascii=False, default=str)
+        finally:
+            sys.setrecursionlimit(original_limit)
     
     def get_backup_stats(self) -> Dict[str, Any]:
         """
