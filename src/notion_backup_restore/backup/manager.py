@@ -137,13 +137,12 @@ class NotionBackupManager:
         except Exception as e:
             self.logger.error(f"Backup failed: {e}")
             
-            # Clean up partial backup on failure
+            # Keep partial backup for resume capability
             if self.backup_dir and self.backup_dir.exists():
-                try:
-                    shutil.rmtree(self.backup_dir)
-                    self.logger.info(f"Cleaned up partial backup directory: {self.backup_dir}")
-                except Exception as cleanup_error:
-                    self.logger.warning(f"Failed to clean up backup directory: {cleanup_error}")
+                self.logger.warning(
+                    f"Partial backup preserved at: {self.backup_dir}\n"
+                    f"To resume, use: --resume-from {self.backup_dir.name}"
+                )
             
             raise
     
