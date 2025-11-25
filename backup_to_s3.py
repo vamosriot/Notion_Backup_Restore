@@ -514,5 +514,111 @@ def list_s3_backups():
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
 
+@app.command("test-s3")
+def test_s3_connection():
+    """Test S3 connection and permissions."""
+    
+    console.print(Panel.fit(
+        "[bold blue]S3 Connection Test[/bold blue]",
+        border_style="blue"
+    ))
+    
+    try:
+        # Validate S3 configuration
+        s3_config = get_s3_config()
+        if not validate_s3_config(s3_config):
+            raise typer.Exit(1)
+        
+        console.print(f"[dim]S3 Bucket:[/dim] {s3_config['bucket_name']}")
+        console.print(f"[dim]S3 Region:[/dim] {s3_config['aws_region']}")
+        console.print(f"[dim]S3 Prefix:[/dim] {s3_config['s3_prefix']}")
+        console.print()
+        
+        # Create S3 client
+        console.print("[bold]Step 1:[/bold] Creating S3 client...")
+        s3_client = create_s3_client(s3_config)
+        console.print("[green]✓[/green] S3 client created")
+        
+        # Test bucket access
+        console.print("\n[bold]Step 2:[/bold] Testing bucket access...")
+        try:
+            s3_client.head_bucket(Bucket=s3_config['bucket_name'])
+            console.print(f"[green]✓[/green] Bucket '{s3_config['bucket_name']}' is accessible")
+        except ClientError as e:
+            error_code = e.response['Error']['Code']
+            if error_code == '404':
+                console.print(f"[red]✗[/red] Bucket '{s3_config['bucket_name']}' does not exist")
+            elif error_code == '403':
+                console.print(f"[red]✗[/red] Access denied to bucket '{s3_config['bucket_name']}'")
+            else:
+                console.print(f"[red]✗[/red] Error accessing bucket: {e}")
+            raise typer.Exit(1)
+        
+        # Test write permission
+        console.print("\n[bold]Step 3:[/bold] Testing write permission...")
+        test_key = f"{s3_config['s3_prefix']}test/.s3-connection-test"
+        test_content = f"S3 connection test at {datetime.now().isoformat()}"
+        
+        try:
+            s3_client.put_object(
+                Bucket=s3_config['bucket_name'],
+                Key=test_key,
+                Body=test_content.encode('utf-8')
+            )
+            console.print(f"[green]✓[/green] Write permission OK")
+        except ClientError as e:
+            console.print(f"[red]✗[/red] Write permission denied: {e}")
+            raise typer.Exit(1)
+        
+        # Test read permission
+        console.print("\n[bold]Step 4:[/bold] Testing read permission...")
+        try:
+            response = s3_client.get_object(
+                Bucket=s3_config['bucket_name'],
+                Key=test_key
+            )
+            content = response['Body'].read().decode('utf-8')
+            if content == test_content:
+                console.print(f"[green]✓[/green] Read permission OK")
+            else:
+                console.print(f"[yellow]⚠[/yellow] Read test warning: content mismatch")
+        except ClientError as e:
+            console.print(f"[red]✗[/red] Read permission denied: {e}")
+            raise typer.Exit(1)
+        
+        # Test delete permission
+        console.print("\n[bold]Step 5:[/bold] Testing delete permission...")
+        try:
+            s3_client.delete_object(
+                Bucket=s3_config['bucket_name'],
+                Key=test_key
+            )
+            console.print(f"[green]✓[/green] Delete permission OK")
+        except ClientError as e:
+            console.print(f"[yellow]⚠[/yellow] Delete permission denied (optional): {e}")
+        
+        # Test list permission
+        console.print("\n[bold]Step 6:[/bold] Testing list permission...")
+        try:
+            response = s3_client.list_objects_v2(
+                Bucket=s3_config['bucket_name'],
+                Prefix=s3_config['s3_prefix'],
+                MaxKeys=1
+            )
+            console.print(f"[green]✓[/green] List permission OK")
+        except ClientError as e:
+            console.print(f"[yellow]⚠[/yellow] List permission denied (optional): {e}")
+        
+        console.print(f"\n[green]🎉 All S3 tests passed![/green]")
+        console.print(f"[dim]You can now run backup with confidence.[/dim]")
+        
+    except typer.Exit:
+        raise
+    except Exception as e:
+        console.print(f"\n[red]Error:[/red] {e}")
+        if "--debug" in sys.argv:
+            console.print_exception()
+        raise typer.Exit(1)
+
 if __name__ == "__main__":
     app()
