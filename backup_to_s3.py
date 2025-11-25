@@ -516,10 +516,10 @@ def list_s3_backups():
 
 @app.command("test-s3")
 def test_s3_connection():
-    """Test S3 connection and permissions."""
+    """Test S3 write access by uploading a test file."""
     
     console.print(Panel.fit(
-        "[bold blue]S3 Connection Test[/bold blue]",
+        "[bold blue]S3 Write Test[/bold blue]",
         border_style="blue"
     ))
     
@@ -535,82 +535,29 @@ def test_s3_connection():
         console.print()
         
         # Create S3 client
-        console.print("[bold]Step 1:[/bold] Creating S3 client...")
         s3_client = create_s3_client(s3_config)
-        console.print("[green]✓[/green] S3 client created")
         
-        # Test bucket access
-        console.print("\n[bold]Step 2:[/bold] Testing bucket access...")
-        try:
-            s3_client.head_bucket(Bucket=s3_config['bucket_name'])
-            console.print(f"[green]✓[/green] Bucket '{s3_config['bucket_name']}' is accessible")
-        except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == '404':
-                console.print(f"[red]✗[/red] Bucket '{s3_config['bucket_name']}' does not exist")
-            elif error_code == '403':
-                console.print(f"[red]✗[/red] Access denied to bucket '{s3_config['bucket_name']}'")
-            else:
-                console.print(f"[red]✗[/red] Error accessing bucket: {e}")
-            raise typer.Exit(1)
-        
-        # Test write permission
-        console.print("\n[bold]Step 3:[/bold] Testing write permission...")
-        test_key = f"{s3_config['s3_prefix']}test/.s3-connection-test"
-        test_content = f"S3 connection test at {datetime.now().isoformat()}"
+        # Test write by uploading test.txt
+        console.print("[bold]Testing S3 write access...[/bold]")
+        test_key = f"{s3_config['s3_prefix']}test.txt"
+        test_content = f"S3 connection test from Notion Backup at {datetime.now().isoformat()}"
         
         try:
             s3_client.put_object(
                 Bucket=s3_config['bucket_name'],
                 Key=test_key,
-                Body=test_content.encode('utf-8')
+                Body=test_content.encode('utf-8'),
+                ContentType='text/plain'
             )
-            console.print(f"[green]✓[/green] Write permission OK")
+            console.print(f"[green]✓[/green] Successfully wrote test file!")
+            console.print(f"[dim]Location:[/dim] s3://{s3_config['bucket_name']}/{test_key}")
+            console.print(f"\n[green]🎉 S3 write access confirmed![/green]")
+            console.print(f"[dim]Backup uploads will work.[/dim]")
         except ClientError as e:
-            console.print(f"[red]✗[/red] Write permission denied: {e}")
+            error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+            console.print(f"[red]✗[/red] Failed to write to S3")
+            console.print(f"[red]Error:[/red] {error_code} - {e}")
             raise typer.Exit(1)
-        
-        # Test read permission
-        console.print("\n[bold]Step 4:[/bold] Testing read permission...")
-        try:
-            response = s3_client.get_object(
-                Bucket=s3_config['bucket_name'],
-                Key=test_key
-            )
-            content = response['Body'].read().decode('utf-8')
-            if content == test_content:
-                console.print(f"[green]✓[/green] Read permission OK")
-            else:
-                console.print(f"[yellow]⚠[/yellow] Read test warning: content mismatch")
-        except ClientError as e:
-            console.print(f"[red]✗[/red] Read permission denied: {e}")
-            raise typer.Exit(1)
-        
-        # Test delete permission
-        console.print("\n[bold]Step 5:[/bold] Testing delete permission...")
-        try:
-            s3_client.delete_object(
-                Bucket=s3_config['bucket_name'],
-                Key=test_key
-            )
-            console.print(f"[green]✓[/green] Delete permission OK")
-        except ClientError as e:
-            console.print(f"[yellow]⚠[/yellow] Delete permission denied (optional): {e}")
-        
-        # Test list permission
-        console.print("\n[bold]Step 6:[/bold] Testing list permission...")
-        try:
-            response = s3_client.list_objects_v2(
-                Bucket=s3_config['bucket_name'],
-                Prefix=s3_config['s3_prefix'],
-                MaxKeys=1
-            )
-            console.print(f"[green]✓[/green] List permission OK")
-        except ClientError as e:
-            console.print(f"[yellow]⚠[/yellow] List permission denied (optional): {e}")
-        
-        console.print(f"\n[green]🎉 All S3 tests passed![/green]")
-        console.print(f"[dim]You can now run backup with confidence.[/dim]")
         
     except typer.Exit:
         raise
