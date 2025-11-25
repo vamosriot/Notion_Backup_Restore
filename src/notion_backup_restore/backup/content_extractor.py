@@ -5,7 +5,7 @@ This module handles extraction of all pages within databases, including
 property values, relations, and optionally block content with pagination support.
 """
 
-from typing import Dict, List, Optional, Any, Iterator, Callable
+from typing import Dict, List, Optional, Any, Iterator, Callable, Set
 import logging
 from dataclasses import dataclass
 from datetime import datetime
@@ -67,7 +67,8 @@ class ContentExtractor:
         database_name: str = "",
         include_blocks: bool = False,
         page_size: int = 100,
-        progress_callback: Optional[Callable[[int, int], None]] = None
+        progress_callback: Optional[Callable[[int, int], None]] = None,
+        skip_page_ids: Optional[Set[str]] = None
     ) -> DatabaseContent:
         """
         Extract all content from a database.
@@ -78,16 +79,23 @@ class ContentExtractor:
             include_blocks: Whether to extract block content from pages
             page_size: Number of pages to fetch per request
             progress_callback: Optional callback for progress updates
+            skip_page_ids: Optional set of page IDs to skip (for resume)
             
         Returns:
             DatabaseContent object with all pages
         """
+        if skip_page_ids is None:
+            skip_page_ids = set()
+        
         self.logger.info(
             f"Extracting content from database '{database_name}' ({database_id})"
         )
+        if skip_page_ids:
+            self.logger.info(f"Skipping {len(skip_page_ids)} already downloaded pages")
         
         pages = []
         total_pages = 0
+        skipped_pages = 0
         start_cursor = None
         
         try:
@@ -96,6 +104,13 @@ class ContentExtractor:
                 batch_pages = []
                 
                 for page_data in page_batch:
+                    page_id = page_data.get("id")
+                    
+                    # Skip if already downloaded
+                    if page_id in skip_page_ids:
+                        skipped_pages += 1
+                        continue
+                    
                     page_content = self._extract_page_content(
                         page_data, 
                         include_blocks=include_blocks
@@ -119,9 +134,14 @@ class ContentExtractor:
                 extraction_time=datetime.utcnow().isoformat()
             )
             
-            self.logger.info(
-                f"Extracted {total_pages} pages from database '{database_name}'"
-            )
+            if skipped_pages > 0:
+                self.logger.info(
+                    f"Extracted {total_pages} new pages from database '{database_name}' (skipped {skipped_pages} already downloaded)"
+                )
+            else:
+                self.logger.info(
+                    f"Extracted {total_pages} pages from database '{database_name}'"
+                )
             
             return content
             

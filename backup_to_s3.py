@@ -237,6 +237,16 @@ def main(
         False,
         "--dry-run",
         help="Create backup but don't upload to S3"
+    ),
+    resume_from: Optional[str] = typer.Option(
+        None,
+        "--resume-from",
+        help="Resume from specific partial backup directory (e.g., backup_20251124_174738)"
+    ),
+    resume: bool = typer.Option(
+        False,
+        "--resume",
+        help="Automatically resume from the latest partial backup"
     )
 ):
     """
@@ -287,6 +297,39 @@ def main(
         console.print(f"[dim]S3 Prefix:[/dim] {s3_config['s3_prefix']}")
         console.print()
         
+        # Check if resuming from partial backup
+        resume_backup_dir = None
+        if resume or resume_from:
+            from pathlib import Path
+            
+            if resume:
+                # Find latest backup directory automatically
+                backups_dir = Path("backups")
+                if not backups_dir.exists():
+                    console.print(f"[red]Error:[/red] No backups directory found")
+                    raise typer.Exit(1)
+                
+                backup_dirs = sorted(
+                    [d for d in backups_dir.iterdir() if d.is_dir() and d.name.startswith("backup_")],
+                    key=lambda x: x.stat().st_mtime,
+                    reverse=True
+                )
+                
+                if not backup_dirs:
+                    console.print(f"[red]Error:[/red] No backup directories found to resume from")
+                    raise typer.Exit(1)
+                
+                resume_backup_dir = backup_dirs[0]
+                console.print(f"[yellow]Auto-detected latest backup:[/yellow] {resume_backup_dir.name}")
+            else:
+                # Use specific backup directory
+                resume_backup_dir = Path("backups") / resume_from
+                if not resume_backup_dir.exists():
+                    console.print(f"[red]Error:[/red] Resume backup directory not found: {resume_backup_dir}")
+                    raise typer.Exit(1)
+            
+            console.print(f"[yellow]Resuming from:[/yellow] {resume_backup_dir}")
+        
         # Create backup configuration
         config_overrides = {
             "include_blocks": include_blocks,
@@ -300,7 +343,10 @@ def main(
         backup_manager = NotionBackupManager(config)
         
         # Create backup
-        console.print("[bold]Step 1:[/bold] Creating Notion backup...")
+        if resume_from:
+            console.print("[bold]Step 1:[/bold] Resuming Notion backup...")
+        else:
+            console.print("[bold]Step 1:[/bold] Creating Notion backup...")
         
         with Progress(
             SpinnerColumn(),
@@ -323,7 +369,8 @@ def main(
                     )
             
             backup_dir = backup_manager.start_backup(
-                progress_callback=update_progress
+                progress_callback=update_progress,
+                resume_from_dir=resume_backup_dir
             )
         
         console.print(f"[green]✓[/green] Backup created: {backup_dir}")

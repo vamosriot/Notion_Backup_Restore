@@ -75,7 +75,8 @@ class NotionBackupManager:
     def start_backup(
         self,
         database_names: Optional[List[str]] = None,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None
+        progress_callback: Optional[Callable[[str, int, int], None]] = None,
+        resume_from_dir: Optional[Path] = None
     ) -> Path:
         """
         Start the complete backup process.
@@ -83,6 +84,7 @@ class NotionBackupManager:
         Args:
             database_names: List of database names to backup (defaults to all workspace databases)
             progress_callback: Optional callback for progress updates
+            resume_from_dir: Optional path to resume from partial backup
             
         Returns:
             Path to the backup directory
@@ -93,14 +95,21 @@ class NotionBackupManager:
         if database_names is None:
             database_names = list(WORKSPACE_DATABASES.keys())
         
-        self.logger.info(f"Starting backup for databases: {database_names}")
-        self.progress_logger.start_operation("Backup", len(database_names))
-        
-        try:
+        # Check if resuming from existing backup
+        if resume_from_dir:
+            self.logger.info(f"Resuming backup from: {resume_from_dir}")
+            self.backup_dir = resume_from_dir
+            if not self.backup_dir.exists():
+                raise ValueError(f"Resume directory does not exist: {resume_from_dir}")
+        else:
+            self.logger.info(f"Starting new backup for databases: {database_names}")
             # Create backup directory
             self.backup_dir = self._create_backup_directory()
             self.logger.info(f"Created backup directory: {self.backup_dir}")
-            
+        
+        self.progress_logger.start_operation("Backup", len(database_names))
+        
+        try:
             # Step 1: Discover databases
             self._discover_databases(database_names, progress_callback)
             
@@ -224,6 +233,22 @@ class NotionBackupManager:
             try:
                 self.logger.info(f"Extracting content {i}/{total_databases}: {db_name}")
                 
+                # Check if resuming - load already downloaded page IDs
+                skip_page_ids = set()
+                existing_pages = []
+                content_file = self.backup_dir / "databases" / f"{db_name.lower()}_data.json"
+                
+                if content_file.exists():
+                    self.logger.info(f"Found existing data file for {db_name}, loading to resume...")
+                    try:
+                        with open(content_file, 'r', encoding='utf-8') as f:
+                            existing_data = json.load(f)
+                            existing_pages = existing_data.get("pages", [])
+                            skip_page_ids = {page["id"] for page in existing_pages}
+                            self.logger.info(f"Loaded {len(skip_page_ids)} existing pages for {db_name}, will skip them")
+                    except Exception as e:
+                        self.logger.warning(f"Could not load existing data for {db_name}: {e}, starting fresh")
+                
                 # Progress callback for individual pages
                 def page_progress(current_pages: int, total_pages: int):
                     self.progress_logger.log_progress(
@@ -237,13 +262,43 @@ class NotionBackupManager:
                     database_id=db_info.id,
                     database_name=db_name,
                     include_blocks=self.config.include_blocks,
-                    progress_callback=page_progress
+                    progress_callback=page_progress,
+                    skip_page_ids=skip_page_ids
                 )
+                
+                # Merge with existing pages if resuming
+                if existing_pages:
+                    self.logger.info(f"Merging {len(content.pages)} new pages with {len(existing_pages)} existing pages")
+                    all_pages = existing_pages + [
+                        {
+                            "id": page.id,
+                            "url": page.url,
+                            "properties": page.properties,
+                            "parent": page.parent,
+                            "archived": page.archived,
+                            "created_time": page.created_time,
+                            "last_edited_time": page.last_edited_time,
+                            "created_by": page.created_by,
+                            "last_edited_by": page.last_edited_by,
+                            "cover": page.cover,
+                            "icon": page.icon,
+                            "blocks": page.blocks,
+                        }
+                        for page in content.pages
+                    ]
+                    # Update content with merged pages
+                    from src.notion_backup_restore.backup.content_extractor import DatabaseContent, PageContent
+                    content = DatabaseContent(
+                        database_id=content.database_id,
+                        database_name=content.database_name,
+                        total_pages=len(all_pages),
+                        extraction_time=content.extraction_time,
+                        pages=[PageContent(**page) if isinstance(page, dict) else page for page in all_pages]
+                    )
                 
                 self.extracted_content[db_name] = content
                 
                 # Save content to file
-                content_file = self.backup_dir / "databases" / f"{db_name.lower()}_data.json"
                 self._save_content_to_file(content, content_file)
                 
                 if progress_callback:
